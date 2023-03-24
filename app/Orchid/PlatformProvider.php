@@ -34,8 +34,12 @@ class PlatformProvider extends OrchidServiceProvider
                 ->route('platform.customer.list'),
 
             Menu::make('Продажи')
-                ->icon('bag')
+                ->icon('basket-loaded')
                 ->route('platform.order.list'),
+
+            Menu::make('Товары')
+                ->icon('modules')
+                ->route('platform.product.list'),
 
             
             Menu::make('Example screen')

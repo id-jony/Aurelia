@@ -18,6 +18,7 @@ class Product extends Model
         'category',
         'basePrice',
         'merchants',
+        'minPrice',
 
     ];
 
@@ -29,6 +30,7 @@ class Product extends Model
         'category',
         'basePrice',
         'merchants',
+        'minPrice',
     ];
 
     protected $allowedSorts = [
@@ -39,6 +41,7 @@ class Product extends Model
         'category',
         'basePrice',
         'merchants',
+        'minPrice',
     ];
 
     protected $casts = [
