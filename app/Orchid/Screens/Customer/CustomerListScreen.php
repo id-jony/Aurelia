@@ -68,7 +68,7 @@ class CustomerListScreen extends Screen
                 TD::make('phone', 'Телефон'),
                 TD::make('town', 'Город'),
                 TD::make('Создано')
-                    ->render(fn ($item) => $item->created_at->format('d.m.Y H:i')),
+                    ->render(fn ($item) => $item->updated_at->format('d.m.Y H:i')),
                 TD::make('Опции')
                     ->align(TD::ALIGN_CENTER)
                     ->width(100)

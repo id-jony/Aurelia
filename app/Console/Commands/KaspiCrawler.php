@@ -6,6 +6,7 @@ use Illuminate\Console\Command;
 use Symfony\Component\DomCrawler\Crawler;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
+use App\Models\Product;
 
 class KaspiCrawler extends Command
 {
@@ -14,7 +15,7 @@ class KaspiCrawler extends Command
      *
      * @var string
      */
-    protected $signature = 'kaspicrawler';
+    protected $signature = 'get_kaspi_merchant_price';
 
     /**
      * The console command description.
@@ -30,27 +31,56 @@ class KaspiCrawler extends Command
      */
     public function handle()
     {
-        
-        $link = 'https://kaspi.kz/shop/search/?text=107046399';
-       
-        $getProducts = Http::withOptions(['debug' => false,])
-                    ->get($link);
+    $products = Product::all();
 
+    foreach ($products as $product) {
 
-        $crawler = new Crawler($getProducts->body());
-        $link = $crawler->filter('a.ddl_product_link')->link();
-       
-        $getProduct = Http::withOptions(['debug' => false,])
-                    ->get($link->getUri());
+        $url = "https://kaspi.kz/yml/offer-view/offers/". $product->code;
+        $proxy = "185.28.251.67:1080";
+        $headers = array(
+           "Content-Type: application/json",
+           "Referer: https://kaspi.kz/",
+           "User-Agent: Macintosh; OS X/13.1.0",
+        );
+        $data = '{
+            "cityId":"750000000", 
+            "limit":10,
+            "page":0,
+            "sort":true
+        }';
 
-        $crawler = new Crawler($getProduct->body());
+        $curl = curl_init($url);
 
-            $this->info($crawler->text());
+        curl_setopt($curl, CURLOPT_URL, $url);
+        // curl_setopt($curl, CURLOPT_PROXY, $proxy);
+        // curl_setopt($curl, CURLOPT_PROXYTYPE, CURLPROXY_SOCKS4);
+        curl_setopt($curl, CURLOPT_POST, true);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($curl, CURLOPT_VERBOSE, true);
+        curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
+        // curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
+        // curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
 
+        $resp = curl_exec($curl);
+        curl_close($curl);
 
+        $merchants = collect();
 
-                    Log::debug($crawler->text());
+        foreach (json_decode($resp)->offers as $offers) {
 
+            $merchant = array(
+                "merchantName" => $offers->merchantName,
+                "price" => $offers->price,
+            );
 
+            $merchants->push($merchant);
+
+            
+        }
+
+        $product->merchants = $merchants;
+        $product->save();
     }
+}
 }
