@@ -29,7 +29,7 @@ class PlatformProvider extends OrchidServiceProvider
     {
         return [
             Menu::make('Покупатели')
-                ->title('Контрагенты')
+                ->title('Kaspi.kz')
                 ->icon('people')
                 ->route('platform.customer.list'),
 
