@@ -63,10 +63,11 @@ class CustomerListScreen extends Screen
         return [
             Layout::table('items', [
                 TD::make('id', 'ID'),
-                TD::make('kaspi_id', 'ID Каспи'),
+                TD::make('kaspi_id', 'ID Каспи')->defaultHidden(),
                 TD::make('name', 'ФИО'),
                 TD::make('phone', 'Телефон'),
                 TD::make('town', 'Город'),
+                
                 TD::make('Создано')
                     ->render(fn ($item) => $item->updated_at->format('d.m.Y H:i')),
                 TD::make('Опции')

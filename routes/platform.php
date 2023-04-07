@@ -18,6 +18,8 @@ use App\Orchid\Screens\User\UserProfileScreen;
 use Illuminate\Support\Facades\Route;
 use Tabuna\Breadcrumbs\Trail;
 
+use App\Orchid\Screens\Setting\SettingScreen;
+
 /*
 |--------------------------------------------------------------------------
 | Dashboard Routes
@@ -98,6 +100,11 @@ Route::screen('example-advanced', ExampleFieldsAdvancedScreen::class)->name('pla
 
 Route::screen('customers', 'App\Orchid\Screens\Customer\CustomerListScreen')->name('platform.customer.list');
 Route::screen('orders', 'App\Orchid\Screens\Order\OrderListScreen')->name('platform.order.list');
-Route::screen('products', 'App\Orchid\Screens\Product\ProductListScreen')->name('platform.product.list');
 
-//Route::screen('idea', Idea::class, 'platform.screens.idea');
+Route::screen('products', 'App\Orchid\Screens\Product\ProductListScreen')->name('platform.product.list');
+Route::screen('products/view/{product?}', 'App\Orchid\Screens\Product\ProductViewScreen')
+->name('platform.product.view');
+
+
+Route::screen('kaspi/settings', SettingScreen::class)
+    ->name('platform.kaspi.settings');

@@ -3,14 +3,23 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
 use Illuminate\Database\Eloquent\Model;
+
+use Orchid\Attachment\Attachable;
+use Orchid\Attachment\Models\Attachment;
+use Orchid\Filters\Filterable;
 use Orchid\Screen\AsSource;
 
 class Order extends Model
 {
     use HasFactory, AsSource;
+    use Filterable;
+
 
     protected $fillable = [
+        'id',
         'type',
         'kaspi_id',
         'code',
@@ -29,11 +38,16 @@ class Order extends Model
         'pickupPointId',
         'deliveryAddress',
         'deliveryCost',
-        'creationDate'
+        'creationDate',
+        'transmissionDate',
+        'plannedDeliveryDate',
+        'products',
+         'products->id',
 
     ];
 
     protected $allowedFilters = [
+        'id',
         'type',
         'kaspi_id',
         'code',
@@ -52,10 +66,15 @@ class Order extends Model
         'pickupPointId',
         'deliveryAddress',
         'deliveryCost',
-        'creationDate'
+        'creationDate',
+        'transmissionDate',
+        'plannedDeliveryDate',
+        'products',
+       
     ];
 
     protected $allowedSorts = [
+        'id',
         'type',
         'kaspi_id',
         'code',
@@ -74,13 +93,18 @@ class Order extends Model
         'pickupPointId',
         'deliveryAddress',
         'deliveryCost',
-        'creationDate'
+        'creationDate',
+        'transmissionDate',
+        'plannedDeliveryDate',
+        'products',
     ];
 
     protected $casts = [
         'created_at' => 'datetime:d-m-Y H:i:s',
         'updated_at' => 'datetime:d-m-Y H:i:s',
         'creationDate' => 'datetime:d-m-Y H:i:s',
+        'transmissionDate' => 'datetime:d-m-Y H:i:s',
+        'products' => 'json',
     ];
     
 
@@ -95,7 +119,6 @@ class Order extends Model
 
         });
     }
-
 
     public function customer()
     {

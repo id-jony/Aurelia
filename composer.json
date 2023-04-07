@@ -12,6 +12,7 @@
         "laravel/sanctum": "^3.0",
         "laravel/tinker": "^2.7",
         "orchid/platform": "^13.10",
+        "staudenmeir/eloquent-json-relations": "^1.1",
         "symfony/dom-crawler": "^6.2"
     },
     "require-dev": {

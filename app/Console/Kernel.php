@@ -13,12 +13,12 @@ class Kernel extends ConsoleKernel
 
     protected function schedule(Schedule $schedule)
     {
-        $schedule->command('getorders:status --status=NEW --days_number=30 --page_number=0 --page_size=100')->cron('*/10 * * * *');
-        $schedule->command('getorders:status --status=SIGN_REQUIRED --days_number=30 --page_number=0 --page_size=100')->cron('*/10 * * * *');
-        $schedule->command('getorders:status --status=PICKUP --days_number=30 --page_number=0 --page_size=100')->cron('*/10 * * * *');
-        $schedule->command('getorders:status --status=DELIVERY --days_number=30 --page_number=0 --page_size=100')->cron('*/10 * * * *');
-        $schedule->command('getorders:status --status=KASPI_DELIVERY --days_number=30 --page_number=0 --page_size=100')->cron('*/10 * * * *');
-        $schedule->command('getorders:status --status=ARCHIVE --days_number=30 --page_number=0 --page_size=100')->cron('*/10 * * * *');
+        $schedule->command('getorders:status --user=1 --status=NEW --page_number=0 --page_size=100 --user=1')->cron('*/15 * * * *');
+        $schedule->command('getorders:status --user=1 --status=SIGN_REQUIRED --page_number=0 --page_size=100 --user=1')->cron('*/15 * * * *');
+        $schedule->command('getorders:status --user=1 --status=PICKUP --page_number=0 --page_size=100 --user=1')->cron('*/15 * * * *');
+        $schedule->command('getorders:status --user=1 --status=DELIVERY --page_number=0 --page_size=100 --user=1')->cron('*/15 * * * *');
+        $schedule->command('getorders:status --user=1 --status=KASPI_DELIVERY --page_number=0 --page_size=100 --user=1')->cron('*/15 * * * *');
+        $schedule->command('getorders:status --user=1 --status=ARCHIVE --page_number=0 --page_size=100 --user=1')->cron('*/15 * * * *');
 
     }
 

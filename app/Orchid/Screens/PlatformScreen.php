@@ -27,7 +27,7 @@ class PlatformScreen extends Screen
      */
     public function name(): ?string
     {
-        return 'Get Started';
+        return 'Дашборд';
     }
 
     /**
@@ -37,7 +37,7 @@ class PlatformScreen extends Screen
      */
     public function description(): ?string
     {
-        return 'Welcome to your Orchid application.';
+        return 'Добро пожаловать в ваше приложение.';
     }
 
     /**
@@ -48,16 +48,16 @@ class PlatformScreen extends Screen
     public function commandBar(): iterable
     {
         return [
-            Link::make('Website')
-                ->href('http://orchid.software')
+            Link::make('Обновить данные')
+                ->href('#')
                 ->icon('globe-alt'),
 
             Link::make('Documentation')
-                ->href('https://orchid.software/en/docs')
+                ->href('#')
                 ->icon('docs'),
 
-            Link::make('GitHub')
-                ->href('https://github.com/orchidsoftware/platform')
+            Link::make('FAQ')
+                ->href('#')
                 ->icon('social-github'),
         ];
     }

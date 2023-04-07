@@ -7,6 +7,7 @@ use Symfony\Component\DomCrawler\Crawler;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 use App\Models\Product;
+use DefStudio\Telegraph\Models\TelegraphChat;
 
 class KaspiCrawler extends Command
 {
@@ -32,10 +33,10 @@ class KaspiCrawler extends Command
     public function handle()
     {
     $products = Product::all();
-
+    
     foreach ($products as $product) {
 
-        $url = "https://kaspi.kz/yml/offer-view/offers/". $product->code;
+        $url = "https://kaspi.kz/yml/offer-view/offers/". $product->sku;
         $proxy = "185.28.251.67:1080";
         $headers = array(
            "Content-Type: application/json",

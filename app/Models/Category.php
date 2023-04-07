@@ -6,32 +6,34 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Orchid\Screen\AsSource;
 
-class Customer extends Model
+class Category extends Model
 {
     use HasFactory, AsSource;
+
+    // protected $table = 'kaspi_settings';
 
     protected $fillable = [
         'id',
         'name',
-        'phone',
-        'kaspi_id',
-        'town'
+        'code',
+        'restricted',
+        'closed',
     ];
 
     protected $allowedFilters = [
         'id',
         'name',
-        'phone',
-        'kaspi_id',
-        'town'
+        'code',
+        'restricted',
+        'closed',
     ];
 
     protected $allowedSorts = [
         'id',
         'name',
-        'phone',
-        'kaspi_id',
-        'town'
+        'code',
+        'restricted',
+        'closed',
     ];
 
     protected $casts = [
@@ -51,6 +53,4 @@ class Customer extends Model
 
         });
     }
-
-   
 }
