@@ -12,6 +12,7 @@ use Orchid\Screen\TD;
 use Orchid\Screen\Actions\Button;
 use Orchid\Screen\Actions\DropDown;
 use Orchid\Support\Facades\Toast;
+use Illuminate\Support\Facades\Auth;
 
 
 class CustomerListScreen extends Screen
@@ -24,7 +25,7 @@ class CustomerListScreen extends Screen
     public function query(): iterable
     {
         return [
-            'items' => Customer::query()->paginate(),
+            'items' => Customer::where('user_id', Auth::user()->id)->paginate(),
         ];
     }
 
@@ -67,7 +68,11 @@ class CustomerListScreen extends Screen
                 TD::make('name', 'ФИО'),
                 TD::make('phone', 'Телефон'),
                 TD::make('town', 'Город'),
-                
+                TD::make('whatsapp', 'Whatsapp')
+                ->render(function (Customer $customer) {
+                    return $customer->whatsapp === 0 ? 'Нет' : 'Есть';
+                }),
+
                 TD::make('Создано')
                     ->render(fn ($item) => $item->updated_at->format('d.m.Y H:i')),
                 TD::make('Опции')

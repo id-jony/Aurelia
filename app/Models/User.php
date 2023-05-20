@@ -4,8 +4,14 @@ namespace App\Models;
 
 use Orchid\Platform\Models\User as Authenticatable;
 
+use Illuminate\Notifications\Notifiable;
+
 class User extends Authenticatable
 {
+
+
+    use Notifiable;
+
     /**
      * The attributes that are mass assignable.
      *
@@ -16,7 +22,8 @@ class User extends Authenticatable
         'email',
         'password',
         'permissions',
-      
+        'active'
+
     ];
 
     /**
@@ -51,6 +58,7 @@ class User extends Authenticatable
         'name',
         'email',
         'permissions',
+        'active'
     ];
 
     /**
@@ -64,5 +72,11 @@ class User extends Authenticatable
         'email',
         'updated_at',
         'created_at',
+        'active'
     ];
+
+    public function products()
+    {
+        return $this->hasMany(Product::class);
+    }
 }

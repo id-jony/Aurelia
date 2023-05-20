@@ -20,7 +20,12 @@ class KaspiSetting extends Model
         'count_day',
         'interval_day',
         'shop_name',
-        'shop_id'
+        'shop_id',
+        'points',
+        'proxy',
+        'percent_demp',
+        'interval_demp',
+        'percent_sales'
     ];
 
     protected $allowedFilters = [
@@ -31,7 +36,12 @@ class KaspiSetting extends Model
         'count_day',
         'interval_day',
         'shop_name',
-        'shop_id'
+        'shop_id',
+        'points',
+        'proxy',
+        'percent_demp',
+        'interval_demp',
+        'percent_sales'
     ];
 
     protected $allowedSorts = [
@@ -42,12 +52,18 @@ class KaspiSetting extends Model
         'count_day',
         'interval_day',
         'shop_name',
-        'shop_id'
+        'shop_id',
+        'points',
+        'proxy',
+        'percent_demp',
+        'interval_demp',
+        'percent_sales'
     ];
 
     protected $casts = [
         'created_at' => 'datetime:d-m-Y',
         'updated_at' => 'datetime:d-m-Y',
+        'points' => 'json'
     ];
 
 

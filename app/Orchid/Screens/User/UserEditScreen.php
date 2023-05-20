@@ -8,6 +8,8 @@ use App\Orchid\Layouts\Role\RolePermissionLayout;
 use App\Orchid\Layouts\User\UserEditLayout;
 use App\Orchid\Layouts\User\UserPasswordLayout;
 use App\Orchid\Layouts\User\UserRoleLayout;
+use App\Orchid\Layouts\User\UserOldLayout;
+
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -130,6 +132,17 @@ class UserEditScreen extends Screen
                         ->method('save')
                 ),
 
+                Layout::block(UserOldLayout::class)
+                ->title('Управление доступом')
+                ->description('Настройка доступа к определенным функциям')
+                ->commands(
+                    Button::make(__('Save'))
+                        ->type(Color::DEFAULT())
+                        ->icon('check')
+                        ->canSee($this->user->exists)
+                        ->method('save')
+                ),
+
             Layout::block(UserRoleLayout::class)
                 ->title(__('Roles'))
                 ->description(__('A Role defines a set of tasks a user assigned the role is allowed to perform.'))
@@ -179,10 +192,12 @@ class UserEditScreen extends Screen
             $builder->getModel()->password = Hash::make($request->input('user.password'));
         });
 
-        $user
-            ->fill($request->collect('user')->except(['password', 'permissions', 'roles'])->toArray())
-            ->fill(['permissions' => $permissions])
-            ->save();
+        $user->fill($request->collect('user')->except(['password', 'permissions', 'roles'])->toArray())
+             ->fill(['permissions' => $permissions])
+             ->save();
+
+        $user->active = $request->input('user.active');
+        $user->save();
 
         $user->replaceRoles($request->input('user.roles'));
 

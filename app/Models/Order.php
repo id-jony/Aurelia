@@ -20,7 +20,6 @@ class Order extends Model
 
     protected $fillable = [
         'id',
-        'type',
         'kaspi_id',
         'code',
         'totalPrice',
@@ -41,14 +40,12 @@ class Order extends Model
         'creationDate',
         'transmissionDate',
         'plannedDeliveryDate',
-        'products',
-         'products->id',
+        'user_id'
 
     ];
 
     protected $allowedFilters = [
         'id',
-        'type',
         'kaspi_id',
         'code',
         'totalPrice',
@@ -69,13 +66,13 @@ class Order extends Model
         'creationDate',
         'transmissionDate',
         'plannedDeliveryDate',
-        'products',
+        'user_id',
+        'count'
        
     ];
 
     protected $allowedSorts = [
         'id',
-        'type',
         'kaspi_id',
         'code',
         'totalPrice',
@@ -96,35 +93,45 @@ class Order extends Model
         'creationDate',
         'transmissionDate',
         'plannedDeliveryDate',
-        'products',
+        'user_id',
+        'count'
     ];
 
     protected $casts = [
         'created_at' => 'datetime:d-m-Y H:i:s',
         'updated_at' => 'datetime:d-m-Y H:i:s',
         'creationDate' => 'datetime:d-m-Y H:i:s',
-        'transmissionDate' => 'datetime:d-m-Y H:i:s',
-        'products' => 'json',
+        'transmissionDate' => 'datetime:d M Y',
+        'plannedDeliveryDate' => 'datetime:d M Y',
     ];
     
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class, 'customer_id');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function products()
+    {
+        return $this->hasMany(OrderShipment::class, 'order_id');
+    }
+
 
     protected static function boot()
     {
         parent::boot();
         static::created(function ($model) {
-
+            
         });
 
         self::deleting(function ($model) {
 
         });
     }
-
-    public function customer()
-    {
-        return $this->belongsTo(Customer::class, 'customer_id');
-    }
-
 
     const DELIVERY_VALUE = [
         'DELIVERY_LOCAL' => 'Доставка своими силами',
@@ -159,8 +166,6 @@ class Order extends Model
         'KASPI_DELIVERY' => 'Kaspi Доставка',
         'ARCHIVE' => 'Архив',
     ];
-
-
-
+ 
 
 }

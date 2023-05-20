@@ -100,6 +100,8 @@ Route::screen('example-advanced', ExampleFieldsAdvancedScreen::class)->name('pla
 
 Route::screen('customers', 'App\Orchid\Screens\Customer\CustomerListScreen')->name('platform.customer.list');
 Route::screen('orders', 'App\Orchid\Screens\Order\OrderListScreen')->name('platform.order.list');
+Route::screen('orders/view/{order?}', 'App\Orchid\Screens\Order\OrderViewScreen')
+->name('platform.order.view');
 
 Route::screen('products', 'App\Orchid\Screens\Product\ProductListScreen')->name('platform.product.list');
 Route::screen('products/view/{product?}', 'App\Orchid\Screens\Product\ProductViewScreen')

@@ -22,6 +22,7 @@ class Product extends Model
     protected $fillable = [
         'id',
         'sku',
+        'master_sku',
         'name',
         'category',
         'brand',
@@ -31,16 +32,18 @@ class Product extends Model
         'primaryImage',
         'productUrl',
         'priceMin',
-        'priceMax',
         'priceBase',
         'expireDate',
         'offerStatus',
-        'merchants'
+        'productName',
+        'user_id',
+        'price_cost'
     ];
 
     protected $allowedFilters = [
         'id',
         'sku',
+        'master_sku',
         'name',
         'category',
         'brand',
@@ -50,16 +53,18 @@ class Product extends Model
         'primaryImage',
         'productUrl',
         'priceMin',
-        'priceMax',
         'priceBase',
         'expireDate',
         'offerStatus',
-        'merchants'
+        'productName',
+        'user_id',
+        'price_cost'
     ];
 
     protected $allowedSorts = [
         'id',
         'sku',
+        'master_sku',
         'name',
         'category',
         'brand',
@@ -69,18 +74,18 @@ class Product extends Model
         'primaryImage',
         'productUrl',
         'priceMin',
-        'priceMax',
         'priceBase',
         'expireDate',
         'offerStatus',
-        'merchants'
+        'productName',
+        'user_id',
+        'price_cost'
     ];
 
     protected $casts = [
         'created_at' => 'datetime:d-m-Y H:i:s',
         'updated_at' => 'datetime:d-m-Y H:i:s',
         'expireDate' => 'datetime:d-m-Y H:i:s',
-        'merchants' => 'json',
     ];
 
 
@@ -95,10 +100,39 @@ class Product extends Model
     }
 
 
-
     public function categories()
     {
         return $this->belongsTo(Category::class, 'category');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function reviews()
+    {
+        return $this->hasMany(Review::class);
+    }
+
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    public function rivals()
+    {
+        return $this->hasMany(ProductMerchant::class, 'product_id');
+    }
+
+    public function prices()
+    {
+        return $this->hasMany(PriceHistory::class, 'product_id');
+    }
+
+    public function shipments()
+    {
+        return $this->hasMany(OrderShipment::class, 'product_id');
     }
 
     public function getPriceAttribute()
@@ -111,25 +145,21 @@ class Product extends Model
         return number_format($this->priceMin, 0, ',', ' ') . ' ₸';
     }
 
-    public function getMaxPriceAttribute()
+
+
+    public function getCountAttribute()
     {
-        return number_format($this->priceMax, 0, ',', ' ') . ' ₸';
+        return OrderShipment::where('product_id', $this->id)
+                ->join('orders', 'orders.id', '=', 'order_shipment.order_id')
+                ->where('orders.status', 'COMPLETED')
+                ->count() . ' шт.';
     }
 
-
-
-     public function getCountAttribute()
-     {
-         $count = 0;
-
-         foreach (Order::all() as $order) {
-             foreach ($order->products as $product_data) {
-                 if ($product_data['id'] == $this->id) {
-                     $count = $count + $product_data['quantity'];
-                 }
-             }
-         }
-
-         return $count . ' шт.';
-     }
+    public function getSumMoneyAttribute()
+    {
+        return OrderShipment::where('product_id', $this->id)
+                ->join('orders', 'orders.id', '=', 'order_shipment.order_id')
+                ->where('orders.status', 'COMPLETED')
+                ->sum('order_shipment.price');
+    }
 }

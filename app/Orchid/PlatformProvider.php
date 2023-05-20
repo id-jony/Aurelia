@@ -38,71 +38,23 @@ class PlatformProvider extends OrchidServiceProvider
                 ->title('Kaspi.kz')
                 ->icon('basket-loaded')
                 ->route('platform.order.list')
-                ->badge(fn () => $new_order),
+                ->badge(fn () => $new_order)
+                ->permission('platform.order.list'),
 
             Menu::make('Товары')
                 ->icon('modules')
-                ->route('platform.product.list'),
+                ->route('platform.product.list')
+                ->permission('platform.product.list'),
 
             Menu::make('Покупатели')
                 ->icon('people')
-                ->route('platform.customer.list'),
+                ->route('platform.customer.list')
+                ->permission('platform.customer.list'),
 
             Menu::make('Настройки')
                 ->icon('settings')
-                ->route('platform.kaspi.settings'),
-
-            
-            // Menu::make('Example screen')
-            //     ->icon('monitor')
-            //     ->route('platform.example')
-            //     ->title('Navigation')
-            //     ->badge(fn () => 6),
-
-            // Menu::make('Dropdown menu')
-            //     ->icon('code')
-            //     ->list([
-            //         Menu::make('Sub element item 1')->icon('bag'),
-            //         Menu::make('Sub element item 2')->icon('heart'),
-            //     ]),
-
-            // Menu::make('Basic Elements')
-            //     ->title('Form controls')
-            //     ->icon('note')
-            //     ->route('platform.example.fields'),
-
-            // Menu::make('Advanced Elements')
-            //     ->icon('briefcase')
-            //     ->route('platform.example.advanced'),
-
-            // Menu::make('Text Editors')
-            //     ->icon('list')
-            //     ->route('platform.example.editors'),
-
-            // Menu::make('Overview layouts')
-            //     ->title('Layouts')
-            //     ->icon('layers')
-            //     ->route('platform.example.layouts'),
-
-            // Menu::make('Chart tools')
-            //     ->icon('bar-chart')
-            //     ->route('platform.example.charts'),
-
-            // Menu::make('Cards')
-            //     ->icon('grid')
-            //     ->route('platform.example.cards')
-            //     ->divider(),
-
-            // Menu::make('Documentation')
-            //     ->title('Docs')
-            //     ->icon('docs')
-            //     ->url('https://orchid.software/en/docs'),
-
-            // Menu::make('Changelog')
-            //     ->icon('shuffle')
-            //     ->url('https://github.com/orchidsoftware/platform/blob/master/CHANGELOG.md')
-            //     ->target('_blank')
-            //     ->badge(fn () => Dashboard::version(), Color::DARK()),
+                ->route('platform.kaspi.settings')
+                ->permission('platform.kaspi.settings'),
 
             Menu::make(__('Users'))
                 ->icon('user')
@@ -135,6 +87,11 @@ class PlatformProvider extends OrchidServiceProvider
     public function registerPermissions(): array
     {
         return [
+            ItemPermission::group(__('System'))
+                ->addPermission('platform.order.list', 'Продажи')
+                ->addPermission('platform.product.list', 'Товары')
+                ->addPermission('platform.customer.list', 'Покупатели')
+                ->addPermission('platform.kaspi.settings', 'Настройки'),
             ItemPermission::group(__('System'))
                 ->addPermission('platform.systems.roles', __('Roles'))
                 ->addPermission('platform.systems.users', __('Users')),

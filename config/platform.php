@@ -114,7 +114,7 @@ return [
     */
 
     'resource'      => [
-        'stylesheets' => [],
+        'stylesheets' => ['/vendor/orchid/css/style.css'],
         'scripts'     => [],
     ],
 
@@ -133,8 +133,8 @@ return [
     */
 
     'template'      => [
-        'header' => '',
-        'footer' => '',
+        'header' => null,
+        'footer' => 'brand.footer',
     ],
 
     /*

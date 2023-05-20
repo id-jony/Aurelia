@@ -7,8 +7,8 @@ use Illuminate\Http\Request;
 
 use App\Models\KaspiSetting;
 
-use App\Helpers\Kaspi\MerchantGetSettings;
-use App\Helpers\Kaspi\MerchantLogin;
+use App\Api\Kaspi\MerchantGetSettings;
+use App\Api\Kaspi\MerchantLogin;
 use Orchid\Support\Facades\Layout;
 use Orchid\Screen\TD;
 use Orchid\Screen\Actions\Button;
@@ -18,7 +18,8 @@ use Orchid\Screen\Actions\Link;
 use Orchid\Support\Color;
 use Orchid\Screen\Fields\Input;
 use Orchid\Screen\Fields\Password;
-
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 
 class SettingScreen extends Screen
@@ -44,7 +45,11 @@ class SettingScreen extends Screen
 
     public function commandBar(): iterable
     {
-        return [];
+        return [
+            Button::make('Синхронизировать c Kaspi.kz')
+                ->icon('refresh')
+                ->method('check_settings'),
+        ];
     }
 
     public function layout(): iterable
@@ -70,7 +75,7 @@ class SettingScreen extends Screen
                 ),
 
 
-                Layout::block([
+            Layout::block([
                 Layout::rows([
                     Input::make('setting.username')
                         ->type('text')
@@ -79,14 +84,14 @@ class SettingScreen extends Screen
                         ->title('Email')
                         ->placeholder('Введите email'),
                     Password::make('setting.password')
-                        ->type('text')
+                        ->type('password')
                         ->max(255)
                         ->title('Пароль')
                         ->placeholder('Введите пароль'),
                 ])
             ])
                 ->title('Kaspi Мерчант')
-                ->description('Введите данные для входа в личный кабинет Каспи Мерчант, что бы иметь возможность управления товарами через платформу')
+                ->description('Введите данные для входа в личный кабинет Каспи Мерчант, чтобы иметь возможность управления товарами через платформу. В личном кабинете Каспи Мерчант создайте нового пользователя разрешив доступ во все разделы.')
                 ->commands(
                     Button::make(__('Save'))
                         ->type(Color::DEFAULT())
@@ -94,14 +99,14 @@ class SettingScreen extends Screen
                         ->method('save')
                 ),
 
-                Layout::block([
+            Layout::block([
                 Layout::rows([
-                    Input::make('setting.shop_name')
+                    Input::make('setting.percent_sales')
                         ->type('text')
                         ->max(255)
                         ->required()
-                        ->title('Название магазина')
-                        ->placeholder('Введите название'),
+                        ->title('Комиссия за продажи (%)')
+                        ->placeholder('Введите процент'),
                     Input::make('setting.count_day')
                         ->type('text')
                         ->max(255)
@@ -125,33 +130,104 @@ class SettingScreen extends Screen
                         ->method('save')
                 ),
 
+
+            Layout::block([
+                Layout::rows([
+                    Input::make('setting.interval_demp')
+                        ->type('text')
+                        ->max(255)
+                        ->required()
+                        ->title('Интервал изменения цены (₸)')
+                        ->placeholder('10'),
+                    Input::make('setting.percent_demp')
+                        ->type('text')
+                        ->max(255)
+                        ->required()
+                        ->title('Максимальный процент демпинга (%)')
+                        ->placeholder('30'),
+                ])
+            ])
+                ->title('Формирование цены')
+                ->description('Демпинг настройки')
+                ->commands(
+                    Button::make(__('Save'))
+                        ->type(Color::DEFAULT())
+                        ->icon('check')
+                        ->method('save')
+                ),
+
+
+
         ];
     }
 
 
-public function save(Request $request): void
-{
-    $setting = KaspiSetting::where('user_id', Auth::user()->id)->first();
+    public function save(Request $request): void
+    {
+        $setting = KaspiSetting::where('user_id', Auth::user()->id)->first();
 
-    if ($setting === null) {
-        $setting = KaspiSetting::create([
-            'user_id' => Auth::user()->id,
-            'token' => $request->input('setting.token'),
-            'username' => $request->input('setting.username'),
-            'password' => $request->input('setting.password'),
-        ]);
-    } else {
-        $setting->fill($request->get('setting'))->save();
+        if ($setting === null) {
+            $setting = KaspiSetting::create([
+                'user_id' => Auth::user()->id,
+                'token' => $request->input('setting.token'),
+                'username' => $request->input('setting.username'),
+                'password' => $request->input('setting.password'),
+            ]);
+        } else {
+            $setting->when($request->filled('setting.password'), function (Builder $builder) use ($request) {
+                // $builder->getModel()->password = Hash::make($request->input('user.password'));
+                $builder->getModel()->password = $request->input('setting.password');
+            });
+
+            $setting
+                ->fill($request->collect('setting')->except(['password'])->toArray())
+                ->save();
+        }
+
+        $token = MerchantLogin::gen($setting->username, $setting->password);
+        $info = MerchantGetSettings::gen($token);
+
+        $points = collect();
+
+        foreach ($info->pointOfServiceList as $point) {
+            if ($point->status === 'ACTIVE') {
+                $name = array("name" => $point->name);
+                $points->push($name);
+            }
+        }
+        $setting->shop_name = $info->name;
+        $setting->shop_id = $info->affiliateId;
+        $setting->points = $points;
+        $setting->save();
+
+
+        Toast::info('Настройки успешно сохранены');
     }
 
-    $token = MerchantLogin::gen($request->input('setting.username'), $request->input('setting.password'));
-    $info = MerchantGetSettings::gen($token);
-    $info = json_decode($info);
-    $setting->shop_name = $info->name;
-    $setting->shop_id = $info->affiliateId;
-    $setting->save();
+    public function check_settings(Request $request): void
+    {
+        $setting = KaspiSetting::where('user_id', Auth::user()->id)->first();
+        $token = MerchantLogin::gen($setting->username, $setting->password);
 
+        if ($token) {
+            $info = MerchantGetSettings::gen($token);
+            $points = collect();
 
-    Toast::info('Настройки успешно сохранены');
-}
+            foreach ($info->pointOfServiceList as $point) {
+                if ($point->status === 'ACTIVE') {
+                    $name = array("name" => $point->name);
+                    $points->push($name);
+                }
+            }
+
+            $setting->shop_name = $info->name;
+            $setting->shop_id = $info->affiliateId;
+            $setting->points = $points;
+            $setting->save();
+
+            Toast::info('Данные с Kaspi успешно получены');
+        } else {
+            Toast::info('Не удалось подключиться, проверьте правильность ввода данных');
+        }
+    }
 }

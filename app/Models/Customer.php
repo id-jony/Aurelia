@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Orchid\Screen\AsSource;
+use GreenApi\RestApi\GreenApiClient;
+use Illuminate\Http\Client\ConnectionException;
 
 class Customer extends Model
 {
@@ -15,7 +17,9 @@ class Customer extends Model
         'name',
         'phone',
         'kaspi_id',
-        'town'
+        'town',
+        'whatsapp',
+        'user_id'
     ];
 
     protected $allowedFilters = [
@@ -23,7 +27,9 @@ class Customer extends Model
         'name',
         'phone',
         'kaspi_id',
-        'town'
+        'town',
+        'whatsapp',
+        'user_id'
     ];
 
     protected $allowedSorts = [
@@ -31,7 +37,9 @@ class Customer extends Model
         'name',
         'phone',
         'kaspi_id',
-        'town'
+        'town',
+        'whatsapp',
+        'user_id'
     ];
 
     protected $casts = [
@@ -44,13 +52,10 @@ class Customer extends Model
     {
         parent::boot();
         static::created(function ($model) {
-
+           
         });
 
         self::deleting(function ($model) {
-
         });
     }
-
-   
 }

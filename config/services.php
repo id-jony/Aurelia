@@ -35,6 +35,7 @@ return [
         'url' => env('KASPI_URL'),
         'url_mc' => env('KASPI_MC_URL'),
         'api_token' => env('KASPI_API_TOKEN'),
+        'debug' => env('KASPI_API_DEBUG'),
     ],
 
 ];

@@ -7,9 +7,11 @@
     "require": {
         "php": "^8.0.2",
         "defstudio/telegraph": "^1.33",
+        "green-api/whatsapp-api-client-php": "^0.2.0",
         "guzzlehttp/guzzle": "^7.5",
         "laravel/framework": "^9.19",
         "laravel/sanctum": "^3.0",
+        "laravel/telescope": "^4.14",
         "laravel/tinker": "^2.7",
         "orchid/platform": "^13.10",
         "staudenmeir/eloquent-json-relations": "^1.1",
