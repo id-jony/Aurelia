@@ -12,9 +12,13 @@ use Illuminate\Http\Request;
 
 use App\Models\Review;
 use App\Models\Product;
+use App\Models\OrderShipment;
+
 use App\Models\User;
 use App\Api\Kaspi\GetProductReviews;
 use App\Notifications\KaspiInfo;
+use Laravel\Nova\Notifications\NovaNotification;
+use Laravel\Nova\URL;
 
 class GetReviews implements ShouldQueue
 {
@@ -23,6 +27,9 @@ class GetReviews implements ShouldQueue
     private $sku;
     private $product;
     private $user;
+
+    public $failOnTimeout = false;
+    public $timeout = 120000;
     /**
      * Create a new job instance.
      *
@@ -43,7 +50,9 @@ class GetReviews implements ShouldQueue
     public function handle()
     {
         // Проверяем отзывы товара
-            $review_data = GetProductReviews::gen($this->sku);
+        $review_data = GetProductReviews::gen($this->sku);
+
+        if (!empty($review_data->data)) {
             foreach ($review_data->data as $data) {
                 $review = Review::where('kaspi_id', $data->id)->first();
                 if ($review == null) {
@@ -58,7 +67,20 @@ class GetReviews implements ShouldQueue
                     $review->rating = $data->rating ?? '';
                     $review->date = $data->date ?? '';
 
-                    $this->user->notify(new KaspiInfo('Новый отзыв у товара ', $this->product->name . ' - ' . $review->customer_author, route('platform.product.view', $this->product->id)));
+                    $shipments = OrderShipment::where('product_id', $this->product->id)->get();
+                    foreach ($shipments as $shipment) {
+                        if (stristr($shipment->order->customer->name, $review->customer_author) != false) {
+                            $review->customer_id = $shipment->order->customer->id;
+                        }
+                    }
+
+                    $this->user->notify(
+                        NovaNotification::make()
+                            ->message('Новый отзыв у товара ' . $this->product->name . ' - ' . $review->customer_author)
+                            ->action('Открыть', URL::remote('/app/resources/products/' . $this->product->id))
+                            ->icon('chat')
+                            ->type('info')
+                    );
                 } elseif ($review->plus != $data->comment->plus ?? '' || $review->minus != $data->comment->minus ?? '' || $review->text != $data->comment->text ?? '' || $review->photo != $data->galleryImages[0]->large || $review->rating != $data->rating ?? '') {
                     $review->plus = $data->comment->plus ?? '';
                     $review->minus = $data->comment->minus ?? '';
@@ -67,10 +89,17 @@ class GetReviews implements ShouldQueue
                     $review->rating = $data->rating ?? '';
                     $review->date = $data->date ?? '';
 
-                    $this->user->notify(new KaspiInfo('Обновлен отзыв у товара ', $this->product->name . ' - ' . $review->customer_author, route('platform.product.view', $this->product->id)));
+                    $this->user->notify(
+                        NovaNotification::make()
+                            ->message('Обновлен отзыв у товара ' . $this->product->name . ' - ' . $review->customer_author)
+                            ->action('Открыть', URL::remote('/app/resources/products/' . $this->product->id))
+                            ->icon('chat')
+                            ->type('info')
+                    );
                 }
                 $review->save();
             }
-            // ---------------------------------
+        }
+        // ---------------------------------
     }
 }

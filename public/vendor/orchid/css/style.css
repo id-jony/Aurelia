@@ -1,9 +1,0 @@
-.status {
-    border-radius: 99px;
-}
-
-@media (min-width: 768px) {
-.aside {
-max-width: 110px;
-min-width: 15em;
-}}

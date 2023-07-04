@@ -2,73 +2,76 @@
 
 namespace App\Api\Kaspi;
 
-use GuzzleHttp\Client;
-
 use GuzzleHttp\Exception\RequestException;
-use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Support\Facades\Log;
+use GuzzleHttp\Exception\ConnectException;
 use Illuminate\Support\Facades\Http;
-use GuzzleHttp\Cookie\CookieJar;
-use App\Models\Town;
-use App\Models\Proxy;
-use App\Models\User;
-
-use App\Notifications\KaspiInfo;
+use App\Exceptions\KaspiException;
 
 class GetProductReviews
 {
     /**
-     * Получение списка заказов
-     *
-     * @param integer $lenght
-     * @return object
+     * Получение списка конкурентов товара
      */
-
 
     public static function gen($sku)
     {
-        $result = '';
         $config = config('services.kaspi');
-        $user = User::find(1);
-        $proxies = Proxy::where('status', 1)->inRandomOrder()->get();
-        $headers = [
-                        'Content-Type' => 'application/json',
-                        'Referer' => 'https://kaspi.kz/',
-                        'User-Agent' => 'Macintosh; OS X/13.1.0',
-                    ];
+        $headers = self::createHeaders();
+        $maxAttempts = 5; // Максимальное количество попыток
+        $attempt = 1;
 
-        // foreach ($proxies as $proxy) {
+        while ($attempt <= $maxAttempts) {
             try {
-            $result = Http::withHeaders($headers)
-                            ->withOptions([
-                                'debug' => $config['debug'],
-                                'allow_redirects' => false,
-                                // 'proxy' => $proxy->protocol . $proxy->ip .':'. $proxy->port,
-                                'proxy' => 'socks5://jekajecka7755:87303087@89.219.34.157:10602',
-                                'timeout' => 0,
-                                'connect_timeout' => 0,
-                                'verify' => false,
-                                ])
-                            ->accept('application/json')
-                            ->get('https://kaspi.kz/yml/creview/rest/misc/product/'.$sku.'/reviews?limit=100&page=0&id=all');
+                $response = Http::withHeaders($headers)
+                    ->withOptions([
+                        'debug' => $config['debug'],
+                        'allow_redirects' => false,
+                        'proxy' => 'socks5://jekajecka7755:a3e5e3@185.102.73.37:10012',
+                        'timeout' => 0,
+                        'connect_timeout' => 0,
+                        'verify' => false,
+                    ])
+                    ->acceptJson()
+                    ->get('https://kaspi.kz/yml/creview/rest/misc/product/' . $sku . '/reviews?limit=100&page=0&id=all');
 
-
-            if($result->successful()) {
-                return json_decode($result->body());
-            } 
-            
-            } catch (ConnectionException $err ) {
-                // $proxy->status = 0;
-                // $proxy->save();
-
-                // $user->notify(new KaspiInfo('Прокси', 'Прокси отключен:'. $proxy->ip, ''));
-            } catch (RequestException $error) {
-                // $proxy->status = 0;
-                // $proxy->save();
-
-                // $user->notify(new KaspiInfo('Прокси', 'Прокси отключен:'. $proxy->ip, ''));
+                if ($response->successful()) {
+                    return $response->json();
+                } else {
+                    throw new KaspiException('Failed to get merchant product price.');
+                }
+            } catch (ConnectException $exception) {
+                throw new KaspiException('Ошибка подключения: ' . $exception->getMessage());
+            } catch (RequestException $exception) {
+                if ($attempt < $maxAttempts) {
+                    // Увеличиваем счетчик попыток и повторяем цикл
+                    $attempt++;
+                    continue;
+                } else {
+                    throw new KaspiException('Ошибка запроса: ' . $sku . ' | ' . $exception->getMessage());
+                }
+            } catch (\Exception $exception) {
+                if ($attempt < $maxAttempts) {
+                    // Увеличиваем счетчик попыток и повторяем цикл
+                    $attempt++;
+                    continue;
+                } else {
+                    throw new KaspiException('Ошибка при получении цены товара продавца. ' . $sku);
+                }
             }
         }
+    }
 
-    // }
+    /**
+     * Создание заголовков для HTTP-запроса
+     *
+     * @return array
+     */
+    private static function createHeaders()
+    {
+        return [
+            'Content-Type' => 'application/json',
+            'Referer' => 'https://kaspi.kz/',
+            'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.2 Safari/605.1.15',
+        ];
+    }
 }

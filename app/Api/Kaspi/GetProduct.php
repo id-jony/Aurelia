@@ -2,41 +2,67 @@
 
 namespace App\Api\Kaspi;
 
-use GuzzleHttp\Client;
 use Exception;
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\ConnectException;
 use Illuminate\Support\Facades\Log;
-use App\Models\KaspiSetting;
+use App\Models\Shop;
 use Illuminate\Support\Facades\Http;
+use App\Exceptions\KaspiException;
 
 class GetProduct
 {
     /**
      * Получение списка заказов
      *
-     * @param integer $lenght
+     * @param integer $orderId
+     * @param integer $userId
      * @return object
+     * @throws KaspiException
      */
-
-
-    public static function gen($order_id, $user)
+    public static function gen($orderId, $userId)
     {
-        $result = '';
         $config = config('services.kaspi');
-        $setting = KaspiSetting::where('user_id', $user)->first();
+        $setting = Shop::where('user_id', $userId)->first();
+        if (!$setting) {
+            throw new KaspiException('Kaspi setting not found for user');
+        }
+        $headers = self::createHeaders($setting->token);
 
-        $headers = [
-                        'Content-Type' => 'application/vnd.api+json',
-                        'X-Auth-Token' => $setting->token,
-                    ];
+        try {
+            $response = Http::withHeaders($headers)
+                ->withOptions([
+                    'debug' => $config['debug'],
+                ])
+                ->accept('application/vnd.api+json')
+                ->get($config['url'] . 'orderentries/' . $orderId . '/product');
 
-        $result = Http::withHeaders($headers)
-                        ->withOptions([
-                                'debug' => $config['debug'],
-                            ])
-                        ->accept('application/vnd.api+json')
-                        ->get($config['url'].'orderentries/'.$order_id.'/product');
+            if ($response->successful()) {
+                return json_decode($response->body());
+            } else {
+                throw new KaspiException('Failed to get product.');
+            }
+        } catch (RequestException $exception) {
+            throw new KaspiException('RequestException while getting product.');
+        } catch (ConnectException $exception) {
+            throw new KaspiException('ConnectException while getting product.');
+        } catch (Exception $exception) {
+            throw new KaspiException('Error while getting product.');
+        }
+    }
 
-
-        return json_decode($result->body());
+    /**
+     * Создание заголовков запроса
+     *
+     * @param string $token
+     * @return array
+     */
+    private static function createHeaders($token)
+    {
+        return [
+            'Content-Type' => 'application/vnd.api+json',
+            'X-Auth-Token' => $token,
+        ];
     }
 }

@@ -2,21 +2,16 @@
 
 namespace App\Models;
 
-use Orchid\Platform\Models\User as Authenticatable;
 
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Nova\Auth\Impersonatable;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
+    use Notifiable, Impersonatable, HasRoles;
 
-
-    use Notifiable;
-
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array
-     */
     protected $fillable = [
         'name',
         'email',
@@ -26,11 +21,6 @@ class User extends Authenticatable
 
     ];
 
-    /**
-     * The attributes excluded from the model's JSON form.
-     *
-     * @var array
-     */
     protected $hidden = [
         'password',
         'remember_token',
@@ -38,45 +28,28 @@ class User extends Authenticatable
 
     ];
 
-    /**
-     * The attributes that should be cast to native types.
-     *
-     * @var array
-     */
     protected $casts = [
         'permissions'          => 'array',
         'email_verified_at'    => 'datetime',
     ];
 
-    /**
-     * The attributes for which you can use filters in url.
-     *
-     * @var array
-     */
-    protected $allowedFilters = [
-        'id',
-        'name',
-        'email',
-        'permissions',
-        'active'
-    ];
-
-    /**
-     * The attributes for which can use sort in url.
-     *
-     * @var array
-     */
-    protected $allowedSorts = [
-        'id',
-        'name',
-        'email',
-        'updated_at',
-        'created_at',
-        'active'
-    ];
+    public function viewAnyRole()
+    {
+        return true; // или другая логика, определяющая разрешение
+    }
 
     public function products()
     {
         return $this->hasMany(Product::class);
+    }
+
+    public function shop()
+    {
+        return $this->hasOne(Shop::class);
+    }
+
+    public function isSuperAdmin()
+    {
+        return $this->hasRole('super-admin');
     }
 }

@@ -7,16 +7,14 @@ use Illuminate\Console\Command;
 
 use App\Models\Order;
 use App\Models\OrderShipment;
-use App\Models\Customer;
+use App\Models\Сonsumer;
 use App\Models\Product;
 use App\Models\User;
 
 use App\Api\Kaspi\GetOrders;
 use App\Api\Kaspi\GetOrder;
 use App\Api\Kaspi\GetProduct;
-use App\Models\KaspiSetting;
-
-use App\Notifications\KaspiInfo;
+use App\Models\Shop;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Client\Response;
@@ -24,6 +22,9 @@ use DefStudio\Telegraph\Models\TelegraphChat;
 use DefStudio\Telegraph\Keyboard\Button;
 use DefStudio\Telegraph\Keyboard\Keyboard;
 use GreenApi\RestApi\GreenApiClient;
+
+use Laravel\Nova\Notifications\NovaNotification;
+use Laravel\Nova\URL;
 
 class GetOrdersKaspiApi extends Command
 {
@@ -35,7 +36,7 @@ class GetOrdersKaspiApi extends Command
         $this->info('Старт импорт заказов Kaspi');
 
         $user = User::find($this->option('user'));
-        $setting = KaspiSetting::where('user_id', $user->id)->first();
+        $setting = Shop::where('user_id', $user->id)->first();
         $status = $this->option('status');
         $page_number = $this->option('page_number');
         $page_size = $this->option('page_size');
@@ -52,12 +53,12 @@ class GetOrdersKaspiApi extends Command
             foreach ($orders->data as $data) {
 
                 // Проверяем покупателей если нет в базе добавляем
-                $customer = Customer::where('kaspi_id', $data->attributes->customer->id)->first();
+                $customer = Сonsumer::where('kaspi_id', $data->attributes->customer->id)->first();
                 if ($customer === null) {
                     // $greenApi = new GreenApiClient('1101814899', '019c1b14c8cb458ea0e61040fdfe8ddc178a50c480454faf81');
                     // $whatsapp_check = $greenApi->serviceMethods->CheckWhatsapp($data->attributes->customer->cellPhone);
 
-                    $customer = new Customer();
+                    $customer = new Сonsumer();
                     $customer->kaspi_id = $data->attributes->customer->id;
                     $customer->name = $data->attributes->customer->lastName . ' ' . $data->attributes->customer->firstName ?? '';
                     $customer->phone = $data->attributes->customer->cellPhone ?? '';
@@ -65,12 +66,25 @@ class GetOrdersKaspiApi extends Command
                     // $customer->whatsapp = $whatsapp_check;
                     $customer->user_id = $user->id;
 
-                    $user->notify(new KaspiInfo('Найден новый покупатель', $customer->name, '#'));
+                    $user->notify(
+                        NovaNotification::make()
+                            ->message('Найден новый покупатель '. $customer->name)
+                            // ->action('Открыть', URL::remote('https://example.com/report.pdf'))
+                            ->icon('user-add')
+                            ->type('info')
+                    );
                 } elseif ($customer->phone != $data->attributes->customer->cellPhone ) {
                     $customer->name = $data->attributes->customer->lastName . ' ' . $data->attributes->customer->firstName ?? '';
                     $customer->phone = $data->attributes->customer->cellPhone ?? '';
                     $customer->town = $data->attributes->deliveryAddress->town ?? '';
-                    $user->notify(new KaspiInfo('Обновлен покупатель', $customer->name, '#'));
+                    
+                    $user->notify(
+                        NovaNotification::make()
+                            ->message('Обновлен покупатель '. $customer->name)
+                            // ->action('Открыть', URL::remote('https://example.com/report.pdf'))
+                            ->icon('user-group')
+                            ->type('info')
+                    );
                 }
                 $customer->save();
 
@@ -101,13 +115,28 @@ class GetOrdersKaspiApi extends Command
                     $order->transmissionDate = $data->attributes->kaspiDelivery->courierTransmissionPlanningDate ?? null;
                     $order->plannedDeliveryDate =  $data->attributes->plannedDeliveryDate ?? null;
                     $order->user_id = $user->id;
+
                     $this->info('Найден новый заказ');
-                    $user->notify(new KaspiInfo('Найден новый заказ', $order->code, route('platform.order.view', $order->id)));
+
+                    $user->notify(
+                        NovaNotification::make()
+                            ->message('Найден новый заказ '. $order->code)
+                            ->action('Открыть', URL::remote('/app/resources/orders/' . $order->id))
+                            ->icon('shopping-cart')
+                            ->type('warning')
+                    );
                 } elseif ($order->status != $data->attributes->status || $order->state != $data->attributes->state) {
                     $order->status = $data->attributes->status;
                     $order->state = $data->attributes->state;
                     $order->updated_at = now();
-                    $user->notify(new KaspiInfo('Обновлен заказ', $order->code, route('platform.order.view', $order->id)));
+
+                    $user->notify(
+                        NovaNotification::make()
+                            ->message('Обновлен заказ '. $order->code)
+                            ->action('Открыть', URL::remote('/app/resources/orders/' . $order->id))
+                            ->icon('shopping-cart')
+                            ->type('warning')
+                    );
                 }
                 $order->save();
                 // ---------------------------
@@ -124,7 +153,14 @@ class GetOrdersKaspiApi extends Command
                         $product->name = $getProduct->data->attributes->name;
                         $product->master_sku = $getProduct->data->attributes->code;
                         $customer->user_id = $user->id;
-                        $user->notify(new KaspiInfo('Найден новый продукт', $product->name, route('platform.product.view', $product->id)));
+
+                        $user->notify(
+                            NovaNotification::make()
+                                ->message('Найден новый продукт '. $product->name)
+                                ->action('Открыть', URL::remote('/app/resources/products/' . $product->id))
+                                ->icon('shopping-bag')
+                                ->type('info')
+                        );
                     }
                     $product->save();
                     // ---------------------------
@@ -139,12 +175,24 @@ class GetOrdersKaspiApi extends Command
                         $order_product->price = $order_data->attributes->basePrice;
                         $order_product->quantity = $order_data->attributes->quantity;
 
-                        $user->notify(new KaspiInfo('Новый товар в заказе ', $product->name . ' - ' . $order->code, route('platform.order.view', $order->id)));
+                        $user->notify(
+                            NovaNotification::make()
+                                ->message('Новый товар в заказе '. $product->name . ' - ' . $order->code)
+                                ->action('Открыть', URL::remote('/app/resources/orders/' . $order->id))
+                                ->icon('shopping-bag')
+                                ->type('info')
+                        );
                     } elseif ($order_product->price != $order_data->attributes->basePrice || $order_product->quantity != $order_data->attributes->quantity) {
                         $order_product->price = $order_data->attributes->basePrice;
                         $order_product->quantity = $order_data->attributes->quantity;
 
-                        $user->notify(new KaspiInfo('Обновлен товар в заказе ', $product->name . ' - ' . $order->code, route('platform.order.view', $order->id)));
+                        $user->notify(
+                            NovaNotification::make()
+                                ->message('Обновлен товар в заказе '. $product->name . ' - ' . $order->code)
+                                ->action('Открыть', URL::remote('/app/resources/orders/' . $order->id))
+                                ->icon('shopping-bag')
+                                ->type('info')
+                        );
                     }
                     $order_product->save();
                     // -------------------------------------

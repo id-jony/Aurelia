@@ -2,7 +2,15 @@
     "private": true,
     "scripts": {
         "dev": "vite",
-        "build": "vite build"
+        "build": "vite build",
+        "build-kaspisettings": "cd nova-components/kaspisettings && npm run dev",
+        "build-kaspisettings-prod": "cd nova-components/kaspisettings && npm run prod",
+        "build-kaspi-settings": "cd nova-components/KaspiSettings && npm run dev",
+        "build-kaspi-settings-prod": "cd nova-components/KaspiSettings && npm run prod",
+        "build-product-title": "cd nova-components/ProductTitle && npm run dev",
+        "build-product-title-prod": "cd nova-components/ProductTitle && npm run prod",
+        "build-product-price": "cd nova-components/ProductPrice && npm run dev",
+        "build-product-price-prod": "cd nova-components/ProductPrice && npm run prod"
     },
     "devDependencies": {
         "axios": "^1.1.2",

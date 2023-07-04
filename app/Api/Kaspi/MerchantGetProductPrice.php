@@ -1,76 +1,96 @@
 <?php
-
 namespace App\Api\Kaspi;
 
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\RequestException;
-use Illuminate\Http\Client\ConnectionException;
+use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Http;
-use GuzzleHttp\Cookie\CookieJar;
-use App\Models\Town;
-use App\Models\Proxy;
-
-use App\Models\User;
-use App\Notifications\KaspiInfo;
 
 class MerchantGetProductPrice
 {
     /**
-     * Получение списка конкурентов продукта
+     * Отправляет POST-запрос к API и возвращает данные
      */
 
 
-    public static function gen($sku, $town)
+    private static $apiUrl = 'https://kaspi.kz/yml/offer-view/offers/';
+    private static $maxRetries = 5;
+    private static $retryTimeout = 20;
+
+    public static function post($master_sku, $retry = 0)
     {
-        $result = '';
-        $config = config('services.kaspi');
-        $user = User::find(1);
-        $proxies = Proxy::where('status', 1)->inRandomOrder()->get();
+        // Создаем экземпляр клиента GuzzleHttp
+        $client = new Client([
+            'debug' => false,
+            'allow_redirects' => false,
+            'proxy' => 'socks5://jekajecka7755:a3e5e3@185.102.73.37:10012',
+            'timeout' => 0,
+            'connect_timeout' => 0,
+            'verify' => false,
+            'http_errors' => false,
+        ]);
 
-        $headers = [
-                        'Content-Type' => 'application/json',
-                        'Referer' => 'https://kaspi.kz/',
-                        'User-Agent' => 'Macintosh; OS X/13.1.0',
-                    ];
+        $requestData = [
+            'cityId' => 750000000,
+            'limit' => 50,
+            'page' => 0,
+            'sort' => true,
+        ];
 
-        // foreach ($proxies as $proxy) {
-            try {
-                $result = Http::withHeaders($headers)
-                                ->withOptions([
-                                    'debug' => $config['debug'],
-                                    'allow_redirects' => false,
-                                    // 'proxy' => $proxy->protocol . $proxy->ip .':'. $proxy->port,
-                                    'proxy' => 'socks5://jekajecka7755:87303087@89.219.34.157:10602',
-                                    'timeout' => 0,
-                                    'connect_timeout' => 0,
-                                    'verify' => false,
-                                    ])
-                                ->accept('application/json')
-                                ->post('https://kaspi.kz/yml/offer-view/offers/'.$sku, [
-                                        'cityId' => $town,
-                                        'limit' => 50,
-                                        'page' => 0,
-                                        'sort' => true,
-                                ]);
+        $response = null;
 
-                if($result->successful()) {
-                    return $result->body();
-                }
+        try {
+            // Отправляем POST-запрос к API
+            $response = $client->post(self::$apiUrl.$master_sku, [
+                'headers' => self::createHeaders(),
+                'json' => $requestData,
+            ]);
 
-            } catch (ConnectionException $err ) {
-                // $proxy->status = 0;
-                // $proxy->save();
-
-                // $user->notify(new KaspiInfo('Прокси', 'Прокси отключен:'. $proxy->ip, ''));
-            } catch (RequestException $error) {
-                // $proxy->status = 0;
-                // $proxy->save();
-
-                // $user->notify(new KaspiInfo('Прокси', 'Прокси отключен:'. $proxy->ip, ''));
+            // Парсим и возвращаем ответ
+            $statusCode = $response->getStatusCode();
+            if ($statusCode === 200) {
+                return json_decode($response->getBody(), true);
             }
+            
+        } catch (GuzzleException $exception) {
+            // Обработка ошибок Guzzle
+            Log::error('Произошла ошибка при отправке запроса к API: ' . $exception->getMessage(), ['exception' => $exception]);
+            // Если произошла ошибка соединения, повторяем запрос не более 5 раз с тайм-аутом 20 секунд
+            if ($retry < self::$maxRetries) {
+                sleep(self::$retryTimeout);
+                return self::post($master_sku, $retry + 1);
+            }
+            throw $exception;
 
-
+            return null;
+        } catch (\Exception $exception) {
+            // Обработка других ошибок
+            Log::error('Ошибка: ' . $exception->getMessage(), ['exception' => $exception]);
+            if ($retry < self::$maxRetries) {
+                sleep(self::$retryTimeout);
+                return self::post($master_sku, $retry + 1);
+            }
+            throw $exception;
+        } catch (\Illuminate\Http\Client\RequestException $e) {
+            Log::error('Ошибка cURL: ' . $e->getMessage());
+            if ($retry < self::$maxRetries) {
+                sleep(self::$retryTimeout);
+                return self::post($master_sku, $retry + 1);
+            }
         }
-    // }
+
+    }
+
+    /**
+     * Создает заголовки для запроса
+     *
+     * @return array
+     */
+    private static function createHeaders(): array
+    {
+        return [
+            'Content-Type' => 'application/json',
+            'Referer' => 'https://kaspi.kz/',
+            'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.2 Safari/605.1.15',
+        ];
+    }
 }

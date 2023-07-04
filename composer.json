@@ -2,20 +2,37 @@
     "name": "laravel/laravel",
     "type": "project",
     "description": "The Laravel Framework.",
-    "keywords": ["framework", "laravel"],
+    "keywords": [
+        "framework",
+        "laravel"
+    ],
     "license": "MIT",
     "require": {
         "php": "^8.0.2",
+        "abordage/nova-table-card": "^0.2.1",
+        "coderello/laravel-nova-lang": "^2.0",
+        "coroowicaksono/chart-js-integration": "^0.4.0",
         "defstudio/telegraph": "^1.33",
+        "eminiarts/nova-tabs": "^2.2",
         "green-api/whatsapp-api-client-php": "^0.2.0",
         "guzzlehttp/guzzle": "^7.5",
         "laravel/framework": "^9.19",
+        "laravel/nova": "~4.0",
         "laravel/sanctum": "^3.0",
         "laravel/telescope": "^4.14",
         "laravel/tinker": "^2.7",
-        "orchid/platform": "^13.10",
+        "llaski/nova-scheduled-jobs": "^6.1",
+        "pragma/kaspi-settings": "@dev",
+        "pragma/product-price": "@dev",
+        "pragma/product-title": "@dev",
+        "sereny/nova-permissions": "^1.3",
+        "sietse85/nova-button": "^1.0",
+        "spatie/laravel-permission": "^5.10",
         "staudenmeir/eloquent-json-relations": "^1.1",
-        "symfony/dom-crawler": "^6.2"
+        "symfony/dom-crawler": "^6.2",
+        "wesselperik/nova-status-field": "^2.1",
+        "yieldstudio/nova-phone-field": "^1.0",
+        "ziffmedia/nova-select-plus": "^2.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.9.1",
@@ -67,5 +84,23 @@
         }
     },
     "minimum-stability": "stable",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "repositories": {
+        "nova": {
+            "type": "composer",
+            "url": "https://nova.laravel.com"
+        },
+        "0": {
+            "type": "path",
+            "url": "./nova-components/KaspiSettings"
+        },
+        "1": {
+            "type": "path",
+            "url": "./nova-components/ProductTitle"
+        },
+        "2": {
+            "type": "path",
+            "url": "./nova-components/ProductPrice"
+        }
+    }
 }

@@ -7,16 +7,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 use Illuminate\Database\Eloquent\Model;
 
-use Orchid\Attachment\Attachable;
-use Orchid\Attachment\Models\Attachment;
-use Orchid\Filters\Filterable;
-use Orchid\Screen\AsSource;
-
 class Order extends Model
 {
-    use HasFactory, AsSource;
-    use Filterable;
-
+    use HasFactory;
 
     protected $fillable = [
         'id',
@@ -43,59 +36,7 @@ class Order extends Model
         'user_id'
 
     ];
-
-    protected $allowedFilters = [
-        'id',
-        'kaspi_id',
-        'code',
-        'totalPrice',
-        'paymentMode',
-        'deliveryCostForSeller',
-        'isKaspiDelivery',
-        'signatureRequired',
-        'deliveryMode',
-        'creditTerm',
-        'waybill',
-        'state',
-        'status',
-        'customer_id',
-        'preOrder',
-        'pickupPointId',
-        'deliveryAddress',
-        'deliveryCost',
-        'creationDate',
-        'transmissionDate',
-        'plannedDeliveryDate',
-        'user_id',
-        'count'
-       
-    ];
-
-    protected $allowedSorts = [
-        'id',
-        'kaspi_id',
-        'code',
-        'totalPrice',
-        'paymentMode',
-        'deliveryCostForSeller',
-        'isKaspiDelivery',
-        'signatureRequired',
-        'deliveryMode',
-        'creditTerm',
-        'waybill',
-        'state',
-        'status',
-        'customer_id',
-        'preOrder',
-        'pickupPointId',
-        'deliveryAddress',
-        'deliveryCost',
-        'creationDate',
-        'transmissionDate',
-        'plannedDeliveryDate',
-        'user_id',
-        'count'
-    ];
+ 
 
     protected $casts = [
         'created_at' => 'datetime:d-m-Y H:i:s',
@@ -107,7 +48,7 @@ class Order extends Model
     
     public function customer()
     {
-        return $this->belongsTo(Customer::class, 'customer_id');
+        return $this->belongsTo(Сonsumer::class, 'customer_id');
     }
 
     public function user()

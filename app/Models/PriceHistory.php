@@ -5,40 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-use Illuminate\Database\Eloquent\Casts\Attribute;
-
-use Orchid\Attachment\Attachable;
-use Orchid\Attachment\Models\Attachment;
-use Orchid\Filters\Filterable;
-use Orchid\Screen\AsSource;
-
 class PriceHistory extends Model
 {
     use HasFactory;
-    use AsSource;
-    use Filterable;
 
     protected $table = 'price_history';
 
     protected $fillable = [
-        'id',
-        'product_id',
-        'price',
-        'rival_id',
-        'user_id',
-        'comment'
-    ];
-
-    protected $allowedFilters = [
-        'id',
-        'product_id',
-        'price',
-        'rival_id',
-        'user_id',
-        'comment'
-    ];
-
-    protected $allowedSorts = [
         'id',
         'product_id',
         'price',

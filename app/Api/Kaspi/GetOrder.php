@@ -2,43 +2,66 @@
 
 namespace App\Api\Kaspi;
 
+use App\Exceptions\KaspiException;
+use App\Models\Shop;
+use GuzzleHttp\Exception\RequestException;
 use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Support\Facades\Log;
-use App\Models\KaspiSetting;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class GetOrder
 {
     /**
      * Получение информации о заказе
-     *
-     * @param integer $lenght
+     * @param int $userId     
      * @return object
+     *
+     * @throws KaspiException
      */
-
-    public static function gen($kaspi_id, $user)
+    public static function gen($kaspiId, int $userId): object
     {
-        $result = '';
         $config = config('services.kaspi');
-        $setting = KaspiSetting::where('user_id', $user)->first();
+        $setting = Shop::where('user_id', $userId)->first();
 
-        $headers = [
-            'Content-Type' => 'application/vnd.api+json',
-            'X-Auth-Token' => $setting->token,
-        ];
+        if (!$setting) {
+            throw new KaspiException('Kaspi setting not found for user');
+        }
+
+        $headers = self::createHeaders($setting->token);
 
         try {
-            $result = Http::withHeaders($headers)
+            $response = Http::withHeaders($headers)
                 ->withOptions([
                     'debug' => $config['debug'],
                 ])
                 ->accept('application/vnd.api+json')
-                ->get($config['url'] . 'orders/' . $kaspi_id . '/entries');
+                ->get($config['url'] . 'orders/' . $kaspiId . '/entries');
 
-
-            return json_decode($result->body());
+            if ($response->successful()) {
+                return json_decode($response->body());
+            } else {
+                throw new KaspiException('Failed to get order information', $response->status());
+            }
         } catch (ConnectionException $err) {
-            // Вывод ошибки
+            throw new KaspiException('Ошибка подключения: ' . $err->getMessage());
+        } catch (RequestException $error) {
+            throw new KaspiException('Ошибка запроса: ' . $error->getMessage());
+        } catch (\Exception $e) {
+            throw new KaspiException('Произошла ошибка: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Создание заголовков HTTP запроса
+     *
+     * @param string $token
+     * @return array
+     */
+    private static function createHeaders(string $token): array
+    {
+        return [
+            'Content-Type' => 'application/vnd.api+json',
+            'X-Auth-Token' => $token,
+        ];
     }
 }

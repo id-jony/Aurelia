@@ -5,18 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-use Illuminate\Database\Eloquent\Casts\Attribute;
-
-use Orchid\Attachment\Attachable;
-use Orchid\Attachment\Models\Attachment;
-use Orchid\Filters\Filterable;
-use Orchid\Screen\AsSource;
-
 class Rival extends Model
 {
     use HasFactory;
-    use AsSource;
-    use Filterable;
 
 
     protected $fillable = [
@@ -25,32 +16,6 @@ class Rival extends Model
         'merchantName',
         'merchantRating',
         'merchantReviewsQuantity',
-        'deliveryDuration',
-        'delivery',
-        'created_at',
-        'updated_at',
-    ];
-
-    protected $allowedFilters = [
-        'id',
-        'merchantId',
-        'merchantName',
-        'merchantRating',
-        'merchantReviewsQuantity',
-        'deliveryDuration',
-        'delivery',
-        'created_at',
-        'updated_at',
-    ];
-
-    protected $allowedSorts = [
-        'id',
-        'merchantId',
-        'merchantName',
-        'merchantRating',
-        'merchantReviewsQuantity',
-        'deliveryDuration',
-        'delivery',
         'created_at',
         'updated_at',
     ];
@@ -58,9 +23,12 @@ class Rival extends Model
     protected $casts = [
         'created_at' => 'datetime:d-m-Y H:i:s',
         'updated_at' => 'datetime:d-m-Y H:i:s',
-        'delivery' => 'datetime:d-m-Y H:i:s',
     ];
 
+    public function rivals()
+    {
+        return $this->hasMany(ProductMerchant::class, 'rival_id');
+    }
 
     protected static function boot()
     {

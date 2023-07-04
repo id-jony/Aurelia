@@ -5,38 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-use Illuminate\Database\Eloquent\Casts\Attribute;
-
-use Orchid\Attachment\Attachable;
-use Orchid\Attachment\Models\Attachment;
-use Orchid\Filters\Filterable;
-use Orchid\Screen\AsSource;
-
 class ProductMerchant extends Model
 {
     use HasFactory;
-    use AsSource;
-    use Filterable;
 
     protected $table = 'product_merchants';
 
     protected $fillable = [
-        'id',
-        'product_id',
-        'rival_id',
-        'price',
-        'deliveryDuration',
-    ];
-
-    protected $allowedFilters = [
-        'id',
-        'product_id',
-        'rival_id',
-        'price',
-        'deliveryDuration',
-    ];
-
-    protected $allowedSorts = [
         'id',
         'product_id',
         'rival_id',

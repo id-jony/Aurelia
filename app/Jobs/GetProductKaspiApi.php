@@ -1,0 +1,221 @@
+<?php
+
+namespace App\Jobs;
+
+use Carbon\Carbon;
+
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+
+use App\Models\Order;
+use App\Models\OrderShipment;
+use App\Models\Сonsumer;
+use App\Models\Product;
+use App\Models\User;
+
+use App\Api\Kaspi\GetOrders;
+use App\Api\Kaspi\GetOrder;
+use App\Api\Kaspi\GetProduct;
+use App\Models\Shop;
+
+use Laravel\Nova\Notifications\NovaNotification;
+use Laravel\Nova\URL;
+
+class GetProductKaspiApi implements ShouldQueue
+{
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
+    private $status;
+    private $user;
+    
+    public $failOnTimeout = false;
+    public $timeout = 120000;
+    /**
+     * Create a new job instance.
+     *
+     * @return void
+     */
+    public function __construct($status, $user)
+    {
+        $this->status = $status;
+        $this->user = $user;
+    }
+
+    /**
+     * Execute the job.
+     *
+     * @return void
+     */
+    
+    public function handle()
+    {
+        $user = User::findOrFail($this->user);
+        $setting = Shop::where('user_id', $user->id)->first();
+        $status = $this->status;
+        $page_number = 0;
+        $page_size = 100;
+
+        for ($i = 0; $i < $setting->count_day; $i = $i + $setting->interval_day) {
+
+            // Получаем интервал дат импорта
+            $start_date = strtotime(Carbon::now()->subDays($setting->interval_day + $i)->format('d.m.Y H:i')) * 1000;
+            $end_date = strtotime(Carbon::now()->subDays(0 + $i)->format('d.m.Y H:i')) * 1000;
+            
+            // Получаем список заказов
+            $orders = GetOrders::gen($page_number, $page_size, $status, $start_date, $end_date, $user->id);
+            foreach ($orders->data as $data) {
+
+                // Проверяем покупателей если нет в базе добавляем
+                $customer = Сonsumer::where('kaspi_id', $data->attributes->customer->id)->first();
+                if ($customer === null) {
+                    // $greenApi = new GreenApiClient('1101814899', '019c1b14c8cb458ea0e61040fdfe8ddc178a50c480454faf81');
+                    // $whatsapp_check = $greenApi->serviceMethods->CheckWhatsapp($data->attributes->customer->cellPhone);
+
+                    $customer = new Сonsumer();
+                    $customer->kaspi_id = $data->attributes->customer->id;
+                    $customer->name = $data->attributes->customer->lastName . ' ' . $data->attributes->customer->firstName ?? '';
+                    $customer->phone = $data->attributes->customer->cellPhone ?? '';
+                    $customer->town = $data->attributes->deliveryAddress->town ?? '';
+                    // $customer->whatsapp = $whatsapp_check;
+                    $customer->user_id = $user->id;
+
+                    $user->notify(
+                        NovaNotification::make()
+                            ->message('Найден новый покупатель '. $customer->name)
+                            // ->action('Открыть', URL::remote('https://example.com/report.pdf'))
+                            ->icon('user-add')
+                            ->type('info')
+                    );
+                } elseif ($customer->phone != $data->attributes->customer->cellPhone ) {
+                    $customer->name = $data->attributes->customer->lastName . ' ' . $data->attributes->customer->firstName ?? '';
+                    $customer->phone = $data->attributes->customer->cellPhone ?? '';
+                    $customer->town = $data->attributes->deliveryAddress->town ?? '';
+                    
+                    $user->notify(
+                        NovaNotification::make()
+                            ->message('Обновлен покупатель '. $customer->name)
+                            // ->action('Открыть', URL::remote('https://example.com/report.pdf'))
+                            ->icon('user-group')
+                            ->type('info')
+                    );
+                }
+                $customer->save();
+
+                // ---------------------------
+
+                // Проверяем наличие заказа
+                $order = Order::where('kaspi_id', $data->id)->first();
+                if ($order === null) {
+                    $order = new Order();
+                    $order->kaspi_id = $data->id ?? '';
+                    $order->code = $data->attributes->code ?? '';
+                    $order->totalPrice = $data->attributes->totalPrice ?? '';
+                    $order->paymentMode = $data->attributes->paymentMode ?? '';
+                    $order->deliveryCostForSeller = $data->attributes->deliveryCostForSeller ?? '';
+                    $order->isKaspiDelivery = $data->attributes->isKaspiDelivery ?? '';
+                    $order->signatureRequired = $data->attributes->signatureRequired ?? '';
+                    $order->deliveryMode = $data->attributes->deliveryMode ?? '';
+                    $order->creditTerm = $data->attributes->creditTerm ?? '0';
+                    // $order->waybill = $data->attributes->kaspiDelivery->waybill ?? '';
+                    $order->state = $data->attributes->state ?? '';
+                    $order->status = $data->attributes->status ?? '';
+                    $order->customer_id = $customer->id ?? '';
+                    $order->preOrder = $data->attributes->preOrder ?? '';
+                    $order->pickupPointId = $data->attributes->pickupPointId ?? '';
+                    $order->deliveryAddress = $data->attributes->deliveryAddress->formattedAddress ?? '';
+                    $order->deliveryCost = $data->attributes->deliveryCost ?? '';
+                    $order->creationDate = date("Y-m-d H:i:s", $data->attributes->creationDate / 1000) ?? '';
+                    // $order->transmissionDate = $data->attributes->kaspiDelivery->courierTransmissionPlanningDate ?? null;
+                    $order->plannedDeliveryDate =  $data->attributes->plannedDeliveryDate ?? null;
+                    $order->user_id = $user->id;
+
+                    $user->notify(
+                        NovaNotification::make()
+                            ->message('Найден новый заказ '. $order->code)
+                            ->action('Открыть', URL::remote('/app/resources/orders/' . $order->id))
+                            ->icon('shopping-cart')
+                            ->type('warning')
+                    );
+                } elseif ($order->status != $data->attributes->status || $order->state != $data->attributes->state) {
+                    $order->status = $data->attributes->status;
+                    $order->state = $data->attributes->state;
+                    $order->updated_at = now();
+
+                    $user->notify(
+                        NovaNotification::make()
+                            ->message('Обновлен заказ '. $order->code)
+                            ->action('Открыть', URL::remote('/app/resources/orders/' . $order->id))
+                            ->icon('shopping-cart')
+                            ->type('warning')
+                    );
+                }
+                $order->save();
+                // ---------------------------
+                
+                // Получаем список заказанных товаров
+                $getOrder = GetOrder::gen($data->id, $user->id);
+                foreach ($getOrder->data as $order_data) {
+
+                    // Проверяем товар
+                    $getProduct = GetProduct::gen($order_data->id, $user->id);
+                    $product = Product::where('master_sku', $getProduct->data->attributes->code)->first();
+                    if ($product === null) {
+                        $product = new Product();
+                        $product->name = $getProduct->data->attributes->name;
+                        $product->master_sku = $getProduct->data->attributes->code;
+                        $customer->user_id = $user->id;
+
+                        $user->notify(
+                            NovaNotification::make()
+                                ->message('Найден новый продукт '. $product->name)
+                                ->action('Открыть', URL::remote('/app/resources/products/' . $product->id))
+                                ->icon('shopping-bag')
+                                ->type('info')
+                        );
+                    }
+                    $product->save();
+                    // ---------------------------
+
+                    // Проверяем список товаров в заказе
+                    $order_product = OrderShipment::where('order_id', $order->id)->where('product_id', $product->id)->first();
+                    if ($order_product === null) {
+                        $order_product = new OrderShipment();
+                        $order_product->order_id = $order->id;
+                        $order_product->product_id = $product->id;
+                        $order_product->kaspi_id = $order_data->id;
+                        $order_product->price = $order_data->attributes->basePrice;
+                        $order_product->quantity = $order_data->attributes->quantity;
+
+                        $user->notify(
+                            NovaNotification::make()
+                                ->message('Новый товар в заказе '. $product->name . ' - ' . $order->code)
+                                ->action('Открыть', URL::remote('/app/resources/orders/' . $order->id))
+                                ->icon('shopping-bag')
+                                ->type('info')
+                        );
+                    } elseif ($order_product->price != $order_data->attributes->basePrice || $order_product->quantity != $order_data->attributes->quantity) {
+                        $order_product->price = $order_data->attributes->basePrice;
+                        $order_product->quantity = $order_data->attributes->quantity;
+
+                        $user->notify(
+                            NovaNotification::make()
+                                ->message('Обновлен товар в заказе '. $product->name . ' - ' . $order->code)
+                                ->action('Открыть', URL::remote('/app/resources/orders/' . $order->id))
+                                ->icon('shopping-bag')
+                                ->type('info')
+                        );
+                    }
+                    $order_product->save();
+                    // -------------------------------------
+
+                }
+            }
+
+        }
+    }
+}

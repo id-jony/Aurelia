@@ -5,26 +5,32 @@ namespace App\Console;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 use App\Models\User;
+use App\Models\PriceManagement;
 
 class Kernel extends ConsoleKernel
 {
     protected $commands = [
         \App\Console\Commands\GetOrdersKaspiApi::class,
+        \App\Console\Commands\KaspiApi::class,
+        \App\Console\Commands\UpdateProduct::class,
+        \App\Console\Commands\KaspiPromo::class,
+        \App\Console\Commands\KaspiComission::class,
     ];
 
     protected function schedule(Schedule $schedule)
     {
 
         foreach (User::where('active', 1)->get() as $user) {
-            $schedule->command('getorders:status --user='. $user->id .' --status=NEW --page_number=0 --page_size=100')->cron('*/15 * * * *');
-            $schedule->command('getorders:status --user='. $user->id .' --status=SIGN_REQUIRED --page_number=0 --page_size=100')->cron('*/15 * * * *');
-            $schedule->command('getorders:status --user='. $user->id .' --status=PICKUP --page_number=0 --page_size=100')->cron('*/15 * * * *');
-            $schedule->command('getorders:status --user='. $user->id .' --status=DELIVERY --page_number=0 --page_size=100')->cron('*/15 * * * *');
-            $schedule->command('getorders:status --user='. $user->id .' --status=KASPI_DELIVERY --page_number=0 --page_size=100')->cron('*/15 * * * *');
-            $schedule->command('getorders:status --user='. $user->id .' --status=ARCHIVE --page_number=0 --page_size=100')->cron('*/15 * * * *');
-            $schedule->command('get-product:kaspi --user='. $user->id)->cron('0 */3 * * *');
+            $schedule->command('kaspi:get --user='. $user->id)->cron('*/15 * * * *');
+            $schedule->command('kaspi:product --user='. $user->id)->cron('0 */1 * * *');
+            $schedule->command('kaspi:promo --user='. $user->id)->cron('0 */1 * * *');
+            $schedule->command('product:update --user='. $user->id)->cron('0 */1 * * *');
+            $schedule->command('discount:product --user='. $user->id)->cron('*/60 * * * *');
         }
-        $schedule->command('update:product --user=1')->cron('0 */3 * * *');
+        
+        $schedule->command('kaspi:comission')->daily(10);
+        // $schedule->command('queue:prune-failed --hours=12')->daily();
+        $schedule->command('model:prune')->daily();
 
     }
 

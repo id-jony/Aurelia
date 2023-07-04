@@ -2,47 +2,66 @@
 
 namespace App\Api\Kaspi;
 
-use GuzzleHttp\Client;
-use Exception;
+use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\ConnectException;
 use Illuminate\Support\Facades\Log;
-use App\Models\KaspiSetting;
 use Illuminate\Support\Facades\Http;
+use App\Exceptions\KaspiException;
 
 class MerchantLogin
 {
     /**
-     * Получение списка заказов
+     * Получение токена сеанса авторизации в кабинете мерчанта
      *
-     * @param integer $lenght
-     * @return string
+     * @param string $username
+     * @param string $password
+     * @return string|null
+     *
+     * @throws KaspiException
      */
-
-
-    public static function gen($username, $password)
+    public static function gen(string $username, string $password): ?string
     {
-        $result = '';
-        $config = config('services.kaspi');
+        $config = config('kaspi.api');
+        $headers = self::createHeaders();
 
-        
-        $headers = [
-                        'Content-Type' => 'application/x-www-form-urlencoded;charset=utf-8',
-                        'User-Agent' => 'Macintosh; OS X/13.1.0',
-                        'Accept-Encoding' => 'gzip'
-                    ];
+        try {
+            $response = Http::withHeaders($headers)
+                ->asForm()
+                ->withOptions(['debug' => $config['debug']])
+                ->post($config['kaspi_mc_api_url'] . 'login', [
+                    'username' => $username,
+                    'password' => $password,
+                ]);
 
-        $result = Http::withHeaders($headers)
-                        ->asForm()
-                        ->withOptions(['debug' => $config['debug'],])
-                        ->post($config['url_mc'].'login', [
-                                'username' => $username,
-                                'password' => $password,
-                        ]);
-        $header = $result->header('Set-Cookie');
+            if ($response->successful()) {
+                $header = $response->header('Set-Cookie');
+                preg_match('/(.*)(X-Mc-Api-Session-Id=[^&]*; D)(.*)/', $header, $matches);
+                $sessionToken = str_replace(' D', '', $matches[2]);
+                $sessionToken = str_replace('X-Mc-Api-Session-Id=', '', $sessionToken);
+                return $sessionToken;
+            } else {
+                throw new KaspiException('Failed to login to Kaspi merchant cabinet.');
+            }
+        } catch (ConnectException $exception) {
+            throw new KaspiException('Connection error: ' . $exception->getMessage());
+        } catch (RequestException $exception) {
+            throw new KaspiException('Request error: ' . $exception->getMessage());
+        } catch (\Exception $exception) {
+            throw new KaspiException('Error while logging into Kaspi merchant cabinet.');
+        }
+    }
 
-        preg_match('/(.*)(X-Mc-Api-Session-Id=[^&]*; D)(.*)/', $header, $matches);
-        $session_token = str_replace(' D', '', $matches[2]);
-        $session_token = str_replace('X-Mc-Api-Session-Id=', '', $session_token);
-
-        return $session_token;
+    /**
+     * Создание заголовков для HTTP-запроса
+     *
+     * @return array
+     */
+    private static function createHeaders(): array
+    {
+        return [
+            'Content-Type' => 'application/x-www-form-urlencoded;charset=utf-8',
+            'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.2 Safari/605.1.15',
+            'Accept-Encoding' => 'gzip'
+        ];
     }
 }
